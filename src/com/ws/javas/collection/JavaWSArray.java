@@ -1,4 +1,4 @@
-package com.ws.javas;
+package com.ws.javas.collection;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
