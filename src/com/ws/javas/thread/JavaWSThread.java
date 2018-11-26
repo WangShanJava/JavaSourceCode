@@ -2,7 +2,12 @@ package com.ws.javas.thread;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class JavaWSThread{
 	
@@ -60,13 +65,37 @@ public class JavaWSThread{
      * DiscardPolicy：不处理，丢弃掉 
      * 除了这些JDK提供的策略外，还可以自己实现 RejectedExecutionHandler 接口定义策略。
 	 */
-	
+	public static void main(String[] args) {
+		createThreadPools();
+	}
 	
 	public static void createThreadPools() {
 		//不建议的做法
-		ExecutorService executorService = Executors.newFixedThreadPool(2);
+		/*一个固定大小的线程池，可以用于已知并发压力的情况下，对线程数做限制。*/
+		ExecutorService newFixedThreadPool = Executors.newFixedThreadPool(2);
+		/*一个单线程的线程池，可以用于需要保证顺序执行的场景，并且只有一个线程在执行。*/
+		ExecutorService newSingleThreadExecutor = Executors.newSingleThreadExecutor();
+		/*一个可以无限扩大的线程池，比较适合处理执行时间比较小的任务。*/
+		ExecutorService newCachedThreadPool = Executors.newCachedThreadPool();
+		/*可以延时启动，定时启动的线程池，适用于需要多个后台线程执行周期任务的场景。*/
+		ExecutorService newScheduledThreadPool = Executors.newScheduledThreadPool(3);
+		/*一个拥有多个任务队列的线程池，可以减少连接数，创建当前可用cpu数量的线程来并行执行。*/
+		/* newWorkStealingPool 是jdk1.8才有的，会根据所需的并行层次来动态创建和关闭线程，通过使用多个队列减少竞争，底层用的 ForkJoinPool来实现的。ForkJoinPool 的优势在于，
+		 * 可以充分利用多cpu，多核cpu的优势，把一个任务拆分成多个“小任务”，把多个“小任务”放到多个处理器核心上并行执行；当多个“小任务”执行完成之后，再将这些执行结果合并起来即可。*/
+		ExecutorService newWorkStealingPool = Executors.newWorkStealingPool();
 		//使用 guava 开源框架的 ThreadFactoryBuilder 给线程池的线程设置名字
-        //ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("demo-thread-%d").build();
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("demo-thread-ws-%d").build();
+        
+        ExecutorService pool = new ThreadPoolExecutor(4, 10, 0L, 
+        		TimeUnit.MILLISECONDS,
+        		new LinkedBlockingDeque<Runnable>(256), 
+        		namedThreadFactory,
+        		new ThreadPoolExecutor.AbortPolicy());
+        
+        pool.execute(() -> System.out.println(Thread.currentThread().getName()));
+        pool.execute(() -> System.out.println(Thread.currentThread().getName()));
+        pool.execute(() -> System.out.println(Thread.currentThread().getName()));
+        pool.shutdown();
 
 	}
 	
